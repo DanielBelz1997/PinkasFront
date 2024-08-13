@@ -1,5 +1,5 @@
 export type Task = {
-  id: number;
+  id?: number;
   item: string;
   checked: boolean;
 };

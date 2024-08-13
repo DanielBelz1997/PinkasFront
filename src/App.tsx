@@ -4,6 +4,7 @@ import Header from "./Header";
 import SearchItem from "./SearchItem";
 import Content from "./Content";
 import Footer from "./Footer";
+import { apiRequest } from "./apiRequest";
 
 import { Task } from "./types/item";
 import AddItem from "./AddItem";
@@ -11,48 +12,109 @@ import AddItem from "./AddItem";
 import "./index.css";
 
 function App() {
-  const [items, setItems] = useState<Task[] | []>(
-    JSON.parse(localStorage.getItem("shopping list") || "[]")
-  );
+  const [items, setItems] = useState<Task[] | []>([]);
   const [newItem, setNewItem] = useState("");
   const [search, setSearch] = useState("");
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // every render
-  console.log("before useEffect");
-
-  // runs at every render! give it dependency!
-  // its asynchronous`
+  // without react-query. only activated at load time
   useEffect(() => {
-    localStorage.setItem("shopping list", JSON.stringify(items));
-    // [] => only at load time
-    // [items] => only when item state changes
-  }, [items]);
+    const fetchItems = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/task`);
+        if (!res.ok) throw Error(`does not receive expected data`);
+        const listItems = await res.json();
+        setItems(listItems);
+        setFetchError(null);
+      } catch (error) {
+        if (error instanceof Error) {
+          setFetchError(error.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // every render
-  console.log("after useEffect");
+    fetchItems();
+  }, []);
 
-  const addItem = (item: Task["item"]) => {
+  const addItem = async (item: Task["item"]) => {
     if (Array.isArray(items)) {
-      const id = items?.length ? items[items.length - 1].id + 1 : 1;
+      const id = items.length ? items[items.length - 1].id + 1 : 1;
       const myNewItem = { id, checked: false, item };
       const listItems = items ? [...items, myNewItem] : [myNewItem];
       setItems(listItems);
+
+      const postOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(myNewItem),
+      };
+
+      const result = await apiRequest(
+        `${import.meta.env.VITE_API_URL}/task`,
+        postOptions
+      );
+
+      if (result) setFetchError(result);
     } else {
-      const id = 1;
-      const myNewItem = { id, checked: false, item };
+      const myNewItem = { id: 1, checked: false, item };
       setItems([myNewItem]);
+
+      const postOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(myNewItem),
+      };
+
+      const result = await apiRequest(
+        `${import.meta.env.VITE_API_URL}/task`,
+        postOptions
+      );
+
+      if (result) setFetchError(result);
     }
   };
 
-  const handleCheck = (id: Task["id"]) => {
+  const handleCheck = async (id: Task["id"]) => {
     const listItems = items?.map((item) =>
       item.id === id ? { ...item, checked: !item.checked } : item
     );
+
+    const myItem = listItems.filter((item) => item.id === id);
+    const updateOptions = {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ checked: myItem[0].checked }),
+    };
+
+    const result = await apiRequest(
+      `${import.meta.env.VITE_API_URL}/task/${id}`,
+      updateOptions
+    );
+
+    if (result) setFetchError(result);
+
     if (listItems) setItems(listItems);
   };
 
-  const handleDelete = (id: Task["id"]) => {
+  const handleDelete = async (id: Task["id"]) => {
+    console.log(items);
     const listItems = items?.filter((item) => item.id !== id);
+    console.log(listItems);
+
+    const reqUrl = `${import.meta.env.VITE_API_URL}/task/${id}`;
+    const deleteOptions = { method: "DELETE" };
+    const result = await apiRequest(reqUrl, deleteOptions);
+
+    if (result) setFetchError(result);
     if (listItems) setItems(listItems);
   };
 
@@ -73,13 +135,19 @@ function App() {
         handleSubmit={handleSubmit}
       />
       <SearchItem search={search} setSearch={setSearch} />
-      <Content
-        items={items?.filter((item) =>
-          item.item.toLowerCase().includes(search.toLowerCase())
+      <main className="w-full flex flex-col flex-grow justify-start overflow-y-auto text-center">
+        {isLoading && <p>Loading Tasks...</p>}
+        {fetchError && <p className="text-red-600">{`Error: ${fetchError}`}</p>}
+        {!fetchError && (
+          <Content
+            items={items?.filter((item) =>
+              item.item.toLowerCase().includes(search.toLowerCase())
+            )}
+            handleCheck={handleCheck}
+            handleDelete={handleDelete}
+          />
         )}
-        handleCheck={handleCheck}
-        handleDelete={handleDelete}
-      />
+      </main>
       <Footer length={items?.length} />
     </div>
   );
