@@ -1,12 +1,12 @@
 import ItemList from "./ItemList";
-import { Item } from "./types/item";
+import { Task } from "./types/item";
 
 export default function Content({
   items,
   handleCheck,
   handleDelete,
 }: {
-  items: Item[] | undefined;
+  items: Task[] | undefined;
   handleCheck: (id: number) => void;
   handleDelete: (id: number) => void;
 }) {

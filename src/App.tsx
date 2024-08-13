@@ -5,13 +5,13 @@ import SearchItem from "./SearchItem";
 import Content from "./Content";
 import Footer from "./Footer";
 
-import { Item } from "./types/item";
+import { Task } from "./types/item";
 import AddItem from "./AddItem";
 
 import "./index.css";
 
 function App() {
-  const [items, setItems] = useState<Item[] | []>(
+  const [items, setItems] = useState<Task[] | []>(
     JSON.parse(localStorage.getItem("shopping list") || "[]")
   );
   const [newItem, setNewItem] = useState("");
@@ -31,7 +31,7 @@ function App() {
   // every render
   console.log("after useEffect");
 
-  const addItem = (item: Item["item"]) => {
+  const addItem = (item: Task["item"]) => {
     if (Array.isArray(items)) {
       const id = items?.length ? items[items.length - 1].id + 1 : 1;
       const myNewItem = { id, checked: false, item };
@@ -44,14 +44,14 @@ function App() {
     }
   };
 
-  const handleCheck = (id: Item["id"]) => {
+  const handleCheck = (id: Task["id"]) => {
     const listItems = items?.map((item) =>
       item.id === id ? { ...item, checked: !item.checked } : item
     );
     if (listItems) setItems(listItems);
   };
 
-  const handleDelete = (id: Item["id"]) => {
+  const handleDelete = (id: Task["id"]) => {
     const listItems = items?.filter((item) => item.id !== id);
     if (listItems) setItems(listItems);
   };
