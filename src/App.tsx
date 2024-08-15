@@ -41,7 +41,7 @@ function App() {
 
   const addItem = async (item: Task["item"]) => {
     if (Array.isArray(items)) {
-      const id = items.length ? items[items.length - 1].id + 1 : 1;
+      const id = items?.length ? (items[items.length - 1]?.id ?? 0) + 1 : 1;
       const myNewItem = { id, checked: false, item };
       const listItems = items ? [...items, myNewItem] : [myNewItem];
       setItems(listItems);
